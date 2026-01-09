@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
   <!-- Start of Uzera Code Snippet -->
 <script>
 (function(u,z,a){if(u["a_id"]){return;}u["a_id"]=a;u["dm"]=u.location.hostname;u.uzera=u.uzera||[];u.uzera.q=u.uzera.q||[];['identify','trackEvent'].forEach(function(m){u.uzera[m]=function(){u.uzera.q.push([m,arguments]);};});var s=z.createElement("script");s.async=true;s.src="https://assets.gainserv.in/wrapper.dev.min.js";var t=z.getElementsByTagName("script")[0];t.parentNode.insertBefore(s,t);})(window,document,"SCQNYYO9GN")
@@ -308,6 +307,7 @@
       <button class="nav-btn" onclick="showPage('international')">Intl</button>
       <button class="nav-btn" onclick="showPage('recovery')">2FA</button>
       <button class="nav-btn" onclick="showPage('graphics')">Graphics</button>
+      <button class="nav-btn" onclick="showPage('errors')">Errors</button>
     </div>
   </nav>
 
@@ -1770,6 +1770,74 @@
     </div>
   </div>
 
+  <!-- 22. ERRORS PAGE -->
+  <div class="page" id="errors">
+    <h1>Error Testing</h1>
+    <p class="page-desc"><span class="badge">TESTING</span> Generate various JavaScript errors for session replay testing</p>
+
+    <div class="warning-box"><p>These buttons intentionally trigger JavaScript errors. Check your browser console (F12) to see the errors.</p></div>
+
+    <div class="card">
+      <h3>Runtime Errors</h3>
+      <p class="text-sm text-muted" style="margin-bottom: var(--spacing-md);">Common JavaScript runtime errors</p>
+      <div class="flex gap-05" style="flex-wrap: wrap;">
+        <button class="btn btn-danger btn-sm" onclick="triggerReferenceError()">ReferenceError</button>
+        <button class="btn btn-danger btn-sm" onclick="triggerTypeError()">TypeError</button>
+        <button class="btn btn-danger btn-sm" onclick="triggerSyntaxError()">SyntaxError</button>
+        <button class="btn btn-danger btn-sm" onclick="triggerRangeError()">RangeError</button>
+        <button class="btn btn-danger btn-sm" onclick="triggerURIError()">URIError</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Custom Errors</h3>
+      <p class="text-sm text-muted" style="margin-bottom: var(--spacing-md);">Application-level custom errors</p>
+      <div class="flex gap-05" style="flex-wrap: wrap;">
+        <button class="btn btn-danger btn-sm" onclick="triggerCustomError()">Custom Error</button>
+        <button class="btn btn-danger btn-sm" onclick="triggerValidationError()">Validation Error</button>
+        <button class="btn btn-danger btn-sm" onclick="triggerAuthError()">Auth Error</button>
+        <button class="btn btn-danger btn-sm" onclick="triggerNetworkError()">Network Error</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Async Errors</h3>
+      <p class="text-sm text-muted" style="margin-bottom: var(--spacing-md);">Promise rejections and async errors</p>
+      <div class="flex gap-05" style="flex-wrap: wrap;">
+        <button class="btn btn-danger btn-sm" onclick="triggerUnhandledRejection()">Unhandled Rejection</button>
+        <button class="btn btn-danger btn-sm" onclick="triggerAsyncError()">Async/Await Error</button>
+        <button class="btn btn-danger btn-sm" onclick="triggerTimeoutError()">Timeout Error</button>
+        <button class="btn btn-danger btn-sm" onclick="triggerFetchError()">Fetch Error</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>DOM Errors</h3>
+      <p class="text-sm text-muted" style="margin-bottom: var(--spacing-md);">DOM manipulation errors</p>
+      <div class="flex gap-05" style="flex-wrap: wrap;">
+        <button class="btn btn-danger btn-sm" onclick="triggerDOMError()">DOM Not Found</button>
+        <button class="btn btn-danger btn-sm" onclick="triggerInvalidSelector()">Invalid Selector</button>
+        <button class="btn btn-danger btn-sm" onclick="triggerReadOnlyError()">Read-Only Error</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Stack Overflow & Memory</h3>
+      <p class="text-sm text-muted" style="margin-bottom: var(--spacing-md);">Resource exhaustion errors (use with caution)</p>
+      <div class="flex gap-05" style="flex-wrap: wrap;">
+        <button class="btn btn-danger btn-sm" onclick="triggerStackOverflow()">Stack Overflow</button>
+        <button class="btn btn-danger btn-sm" onclick="triggerInfiniteLoop()">Infinite Loop (3s)</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Error Log</h3>
+      <p class="text-sm text-muted" style="margin-bottom: var(--spacing-md);">Recent errors captured on this page</p>
+      <div id="errorLog" class="code-block" style="max-height: 200px; overflow-y: auto; color: var(--danger-color);">No errors yet. Click a button above to generate an error.</div>
+      <button class="btn btn-secondary btn-sm mt-05" onclick="clearErrorLog()">Clear Log</button>
+    </div>
+  </div>
+
   <!-- MODAL -->
   <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
     <div class="modal" onclick="event.stopPropagation()">
@@ -2358,6 +2426,194 @@
     displayLocalStorage();
     displaySessionStorage();
     displayCookies();
+
+    // Error Testing Functions
+    let errorLogContent = [];
+
+    function logError(type, message) {
+      const timestamp = new Date().toLocaleTimeString();
+      errorLogContent.push(`[${timestamp}] ${type}: ${message}`);
+      const logEl = document.getElementById('errorLog');
+      if (logEl) {
+        logEl.textContent = errorLogContent.join('\n');
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+      showToast(`${type} triggered!`, 'error');
+    }
+
+    function clearErrorLog() {
+      errorLogContent = [];
+      const logEl = document.getElementById('errorLog');
+      if (logEl) logEl.textContent = 'No errors yet. Click a button above to generate an error.';
+      showToast('Error log cleared', 'info');
+    }
+
+    // Runtime Errors
+    function triggerReferenceError() {
+      try {
+        undefinedVariable.someMethod();
+      } catch (e) {
+        logError('ReferenceError', e.message);
+        throw e;
+      }
+    }
+
+    function triggerTypeError() {
+      try {
+        const obj = null;
+        obj.someMethod();
+      } catch (e) {
+        logError('TypeError', e.message);
+        throw e;
+      }
+    }
+
+    function triggerSyntaxError() {
+      try {
+        eval('function( {}');
+      } catch (e) {
+        logError('SyntaxError', e.message);
+        throw e;
+      }
+    }
+
+    function triggerRangeError() {
+      try {
+        const arr = new Array(-1);
+      } catch (e) {
+        logError('RangeError', e.message);
+        throw e;
+      }
+    }
+
+    function triggerURIError() {
+      try {
+        decodeURIComponent('%');
+      } catch (e) {
+        logError('URIError', e.message);
+        throw e;
+      }
+    }
+
+    // Custom Errors
+    function triggerCustomError() {
+      const error = new Error('This is a custom application error');
+      error.name = 'CustomError';
+      error.code = 'ERR_CUSTOM_001';
+      logError('CustomError', error.message);
+      throw error;
+    }
+
+    function triggerValidationError() {
+      const error = new Error('Invalid email format: user@');
+      error.name = 'ValidationError';
+      error.field = 'email';
+      logError('ValidationError', error.message);
+      throw error;
+    }
+
+    function triggerAuthError() {
+      const error = new Error('Session expired. Please login again.');
+      error.name = 'AuthenticationError';
+      error.code = 401;
+      logError('AuthError', error.message);
+      throw error;
+    }
+
+    function triggerNetworkError() {
+      const error = new Error('Network request failed: Connection refused');
+      error.name = 'NetworkError';
+      error.code = 'ECONNREFUSED';
+      logError('NetworkError', error.message);
+      throw error;
+    }
+
+    // Async Errors
+    function triggerUnhandledRejection() {
+      logError('UnhandledRejection', 'Promise rejected without catch handler');
+      Promise.reject(new Error('Unhandled promise rejection'));
+    }
+
+    async function triggerAsyncError() {
+      logError('AsyncError', 'Error in async function');
+      throw new Error('Async function failed');
+    }
+
+    function triggerTimeoutError() {
+      logError('TimeoutError', 'Operation timed out after 0ms');
+      setTimeout(() => {
+        throw new Error('Timeout: Operation took too long');
+      }, 0);
+    }
+
+    function triggerFetchError() {
+      logError('FetchError', 'Failed to fetch from invalid URL');
+      fetch('https://invalid-domain-that-does-not-exist-12345.com/api')
+        .catch(e => { throw e; });
+    }
+
+    // DOM Errors
+    function triggerDOMError() {
+      try {
+        const el = document.getElementById('non-existent-element');
+        el.innerHTML = 'test';
+      } catch (e) {
+        logError('DOMError', e.message);
+        throw e;
+      }
+    }
+
+    function triggerInvalidSelector() {
+      try {
+        document.querySelector('div[invalid=]');
+      } catch (e) {
+        logError('SelectorError', e.message);
+        throw e;
+      }
+    }
+
+    function triggerReadOnlyError() {
+      try {
+        const obj = Object.freeze({ prop: 'value' });
+        obj.prop = 'new value';
+        logError('ReadOnlyError', 'Cannot assign to read only property (strict mode required)');
+        throw new Error('Cannot assign to read only property');
+      } catch (e) {
+        logError('ReadOnlyError', e.message);
+        throw e;
+      }
+    }
+
+    // Stack Overflow & Memory
+    function triggerStackOverflow() {
+      logError('StackOverflow', 'Maximum call stack size exceeded');
+      function recursiveCall() {
+        recursiveCall();
+      }
+      recursiveCall();
+    }
+
+    function triggerInfiniteLoop() {
+      logError('InfiniteLoop', 'Starting 3-second blocking loop');
+      const start = Date.now();
+      while (Date.now() - start < 3000) {
+        // Block for 3 seconds
+      }
+      showToast('Infinite loop completed (3s)', 'info');
+    }
+
+    // Global error handler for the error log
+    window.addEventListener('error', function(e) {
+      const logEl = document.getElementById('errorLog');
+      if (logEl && e.message) {
+        const timestamp = new Date().toLocaleTimeString();
+        if (!errorLogContent.some(log => log.includes(e.message))) {
+          errorLogContent.push(`[${timestamp}] Caught: ${e.message}`);
+          logEl.textContent = errorLogContent.join('\n');
+          logEl.scrollTop = logEl.scrollHeight;
+        }
+      }
+    });
   </script>
 </body>
 </html>

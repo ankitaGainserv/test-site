@@ -1860,6 +1860,12 @@
 
     // Identify Modal
     function openIdentifyModal() {
+      // Check if session already exists - don't allow reopening modal
+      const existingSession = loadUserSession();
+      if (existingSession && existingSession.email && existingSession.userId) {
+        showToast('Already identified as ' + existingSession.email, 'info');
+        return;
+      }
       document.getElementById('identifyModalOverlay').classList.add('show');
       document.getElementById('identifyForm').style.display = 'block';
       document.getElementById('identifySuccess').style.display = 'none';

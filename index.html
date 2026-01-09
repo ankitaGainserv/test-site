@@ -1938,7 +1938,7 @@
         updateUserDisplay(session.email, session.userId);
         // Re-identify with uzera on page load
         if (typeof uzera === 'function') {
-          uzera("identify", {
+          uzera.identify({
             id: session.userId,
             userData: {
               email: session.email,

@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Start of Uzera Code Snippet -->
+
+<!-- Start of Uzera Code Snippet -->
 <script>
 (function(u,z,a){if(u["a_id"]){return;}u["a_id"]=a;u["dm"]=u.location.hostname;u.uzera=u.uzera||[];u.uzera.q=u.uzera.q||[];['identify','trackEvent'].forEach(function(m){u.uzera[m]=function(){u.uzera.q.push([m,arguments]);};});var s=z.createElement("script");s.async=true;s.src="https://assets.gainserv.in/wrapper.dev.min.js";var t=z.getElementsByTagName("script")[0];t.parentNode.insertBefore(s,t);})(window,document,"SCQNYYO9GN")
 </script>
 <!-- End of Uzera Code Snippet -->
+  
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Session Replay Masking Test Suite</title>
@@ -1860,6 +1862,10 @@
       <p class="text-sm text-muted" style="margin-bottom: var(--spacing-md);">Enter your email to identify yourself. A unique ID will be generated based on your email.</p>
       <form id="identifyForm" onsubmit="handleIdentifySubmit(event)">
         <div class="form-group">
+          <label for="identifyName">Full Name <span style="color: var(--danger-color);">*</span></label>
+          <input type="text" id="identifyName" placeholder="John Doe" required>
+        </div>
+        <div class="form-group">
           <label for="identifyEmail">Email Address <span style="color: var(--danger-color);">*</span></label>
           <input type="email" id="identifyEmail" placeholder="john@example.com" required>
         </div>
@@ -1879,6 +1885,10 @@
         <div style="margin-bottom: var(--spacing-md);">
           <label class="text-sm">User ID:</label>
           <div class="code-block" id="successUserId"></div>
+        </div>
+        <div style="margin-bottom: var(--spacing-md);">
+          <label class="text-sm">Name:</label>
+          <div class="code-block" id="successName"></div>
         </div>
         <div style="margin-bottom: var(--spacing-md);">
           <label class="text-sm">Email:</label>
@@ -1938,6 +1948,7 @@
       document.getElementById('identifyForm').style.display = 'block';
       document.getElementById('identifySuccess').style.display = 'none';
       document.getElementById('generatedIdPreview').style.display = 'none';
+      document.getElementById('identifyName').value = '';
       document.getElementById('identifyEmail').value = '';
     }
     function closeIdentifyModal(e) { if (e.target.id === 'identifyModalOverlay') closeIdentifyModalBtn(); }
@@ -1972,15 +1983,15 @@
     });
 
     // Update UI with user session
-    function updateUserDisplay(email, userId) {
-      const initials = email.split('@')[0].substring(0, 2).toUpperCase();
+    function updateUserDisplay(name, email, userId) {
+      const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
       document.getElementById('userAvatarDisplay').textContent = initials;
-      document.getElementById('userNameDisplay').textContent = email.split('@')[0];
+      document.getElementById('userNameDisplay').textContent = name;
     }
 
     // Save session to localStorage
-    function saveUserSession(email, userId) {
-      const session = { email: email, userId: userId };
+    function saveUserSession(name, email, userId) {
+      const session = { name: name, email: email, userId: userId };
       localStorage.setItem('uzera_user_session', JSON.stringify(session));
     }
 
@@ -2009,17 +2020,19 @@
     function initUserSession() {
       const session = loadUserSession();
       if (session && session.email && session.userId) {
-        updateUserDisplay(session.email, session.userId);
+        const name = session.name || session.email.split('@')[0];
+        updateUserDisplay(name, session.email, session.userId);
         // Re-identify with uzera on page load
         if (typeof uzera !== 'undefined' && uzera.identify) {
           uzera.identify({
             id: session.userId,
             userData: {
+              name: name,
               email: session.email,
             },
           });
         } else {
-          console.log('Session restored - uzera.identify({ id: "' + session.userId + '", userData: { email: "' + session.email + '" } });');
+          console.log('Session restored - uzera.identify({ id: "' + session.userId + '", userData: { name: "' + name + '", email: "' + session.email + '" } });');
         }
       }
     }
@@ -2027,31 +2040,34 @@
     // Handle identify form submission
     function handleIdentifySubmit(e) {
       e.preventDefault();
+      const name = document.getElementById('identifyName').value;
       const email = document.getElementById('identifyEmail').value;
       const userId = generateUserIdFromEmail(email);
 
       // Save session to localStorage
-      saveUserSession(email, userId);
+      saveUserSession(name, email, userId);
 
       // Call uzera identify
       if (typeof uzera !== 'undefined' && uzera.identify) {
         uzera.identify({
           id: userId,
           userData: {
+            name: name,
             email: email,
           },
         });
       } else {
-        console.log('uzera.identify({ id: "' + userId + '", userData: { email: "' + email + '" } });');
+        console.log('uzera.identify({ id: "' + userId + '", userData: { name: "' + name + '", email: "' + email + '" } });');
       }
 
       // Update header display
-      updateUserDisplay(email, userId);
+      updateUserDisplay(name, email, userId);
 
       // Show success state
       document.getElementById('identifyForm').style.display = 'none';
       document.getElementById('identifySuccess').style.display = 'block';
       document.getElementById('successUserId').textContent = userId;
+      document.getElementById('successName').textContent = name;
       document.getElementById('successEmail').textContent = email;
 
       showToast('User identified successfully!', 'success');

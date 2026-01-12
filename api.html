@@ -208,6 +208,59 @@
   <div class="toast-container" id="toastContainer"></div>
   <script src="js/main.js"></script>
   <script>
+    // Simulate API call with sensitive data responses
+    async function simulateAPICall(endpoint) {
+      const display = document.getElementById('apiResponseDisplay');
+      display.style.display = 'block';
+      display.textContent = 'Loading...';
+      display.style.color = '';
+
+      // Mock API responses with sensitive data
+      const mockResponses = {
+        '/api/user': {
+          id: 123,
+          email: 'john@email.com',
+          ssn: '123-45-6789',
+          name: 'John Doe',
+          phone: '+1-555-123-4567',
+          address: '123 Main St, New York, NY 10001'
+        },
+        '/api/payment': {
+          transaction_id: 'txn_abc123',
+          card_number: '4111-1111-1111-1234',
+          card_cvv: '123',
+          card_expiry: '12/25',
+          amount: 299.99,
+          billing_address: '456 Oak Ave, Los Angeles, CA 90001'
+        },
+        '/api/auth': {
+          user_id: 'usr_789xyz',
+          access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U',
+          refresh_token: 'rt_secret_refresh_token_abc123',
+          api_key: 'sk_live_abc123xyz789',
+          session_id: 'sess_secret123'
+        }
+      };
+
+      // Make a real API call to demonstrate network activity
+      const url = `https://jsonplaceholder.typicode.com/users/1`;
+
+      try {
+        const res = await fetch(url);
+        await res.json(); // consume the response
+
+        // Return our mock sensitive data
+        const responseData = mockResponses[endpoint] || { error: 'Unknown endpoint' };
+        display.style.color = 'var(--danger-color)';
+        display.textContent = JSON.stringify(responseData, null, 2);
+        showToast(`API Response: ${endpoint}`, 'success');
+      } catch(e) {
+        display.style.color = 'var(--danger-color)';
+        display.textContent = JSON.stringify({ error: e.message }, null, 2);
+        showToast('API Error', 'error');
+      }
+    }
+
     // Error tracking counts
     const errorCounts = {
       jsErrors: 0,
@@ -265,94 +318,129 @@
       503: { error: 'Service Unavailable', message: 'The server is temporarily unavailable.' }
     };
 
-    // Trigger specific status code error
+    // Trigger specific status code error with real API call
     async function triggerStatusError(statusCode) {
       const display = document.getElementById('apiResponseDisplay');
       display.style.display = 'block';
       display.textContent = 'Loading...';
       display.style.color = '';
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const url = `https://httpstat.us/${statusCode}`;
 
-      const errorInfo = statusErrors[statusCode] || { error: 'Unknown Error', message: 'An error occurred' };
-      const errorData = {
-        status: statusCode,
-        error: errorInfo.error,
-        message: errorInfo.message,
-        endpoint: `/api/test/${statusCode}`,
-        timestamp: new Date().toISOString()
-      };
+      try {
+        const res = await fetch(url, {
+          headers: { 'Accept': 'application/json' }
+        });
 
-      display.style.color = 'var(--danger-color)';
-      display.textContent = JSON.stringify(errorData, null, 2);
-      trackError(null, statusCode);
-      showToast(`API Error: ${statusCode} ${errorInfo.error}`, 'error');
+        const errorInfo = statusErrors[statusCode] || { error: 'Unknown Error', message: 'An error occurred' };
+        const errorData = {
+          status: res.status,
+          statusText: res.statusText,
+          error: errorInfo.error,
+          message: errorInfo.message,
+          url: url,
+          timestamp: new Date().toISOString()
+        };
+
+        display.style.color = 'var(--danger-color)';
+        display.textContent = JSON.stringify(errorData, null, 2);
+        trackError(null, statusCode);
+        showToast(`API Error: ${statusCode} ${errorInfo.error}`, 'error');
+      } catch(e) {
+        const errorData = {
+          status: statusCode,
+          error: 'Request Failed',
+          message: e.message,
+          url: url,
+          timestamp: new Date().toISOString()
+        };
+        display.style.color = 'var(--danger-color)';
+        display.textContent = JSON.stringify(errorData, null, 2);
+        trackError(null, statusCode);
+        showToast(`API Error: ${statusCode}`, 'error');
+      }
     }
 
-    // Trigger network error
+    // Trigger network error with real failed request
     async function triggerNetworkError() {
       const display = document.getElementById('apiResponseDisplay');
       display.style.display = 'block';
       display.textContent = 'Loading...';
       display.style.color = '';
 
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const url = 'https://localhost:99999/api/unreachable';
 
-      const errorData = {
-        type: 'NetworkError',
-        message: 'Failed to fetch: net::ERR_CONNECTION_REFUSED',
-        endpoint: '/api/unreachable',
-        timestamp: new Date().toISOString()
-      };
+      try {
+        await fetch(url);
+      } catch(e) {
+        const errorData = {
+          type: 'NetworkError',
+          message: e.message,
+          url: url,
+          timestamp: new Date().toISOString()
+        };
 
-      display.style.color = 'var(--danger-color)';
-      display.textContent = JSON.stringify(errorData, null, 2);
-      trackError('network');
-      showToast('Network Error: Connection refused', 'error');
+        display.style.color = 'var(--danger-color)';
+        display.textContent = JSON.stringify(errorData, null, 2);
+        trackError('network');
+        showToast('Network Error: ' + e.message, 'error');
+      }
     }
 
-    // Trigger timeout error
+    // Trigger timeout error with AbortController
     async function triggerTimeoutError() {
       const display = document.getElementById('apiResponseDisplay');
       display.style.display = 'block';
-      display.textContent = 'Loading... (simulating timeout)';
+      display.textContent = 'Loading... (will timeout in 2s)';
       display.style.color = '';
 
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const url = 'https://httpstat.us/200?sleep=10000';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
 
-      const errorData = {
-        type: 'TimeoutError',
-        message: 'Request timed out after 30000ms',
-        endpoint: '/api/slow-endpoint',
-        timestamp: new Date().toISOString()
-      };
+      try {
+        await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+      } catch(e) {
+        clearTimeout(timeoutId);
+        const errorData = {
+          type: 'TimeoutError',
+          message: e.name === 'AbortError' ? 'Request timed out after 2000ms' : e.message,
+          url: url,
+          timestamp: new Date().toISOString()
+        };
 
-      display.style.color = 'var(--danger-color)';
-      display.textContent = JSON.stringify(errorData, null, 2);
-      trackError('network');
-      showToast('Timeout Error: Request timed out', 'error');
+        display.style.color = 'var(--danger-color)';
+        display.textContent = JSON.stringify(errorData, null, 2);
+        trackError('network');
+        showToast('Timeout Error: Request aborted', 'error');
+      }
     }
 
-    // Trigger CORS error
+    // Trigger CORS error with real cross-origin request
     async function triggerCORSError() {
       const display = document.getElementById('apiResponseDisplay');
       display.style.display = 'block';
       display.textContent = 'Loading...';
       display.style.color = '';
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const url = 'https://www.google.com/api/test';
 
-      const errorData = {
-        type: 'CORSError',
-        message: 'Access to fetch blocked by CORS policy: No \'Access-Control-Allow-Origin\' header',
-        endpoint: 'https://external-api.example.com/data',
-        timestamp: new Date().toISOString()
-      };
+      try {
+        await fetch(url, { mode: 'cors' });
+      } catch(e) {
+        const errorData = {
+          type: 'CORSError',
+          message: e.message || 'Blocked by CORS policy',
+          url: url,
+          timestamp: new Date().toISOString()
+        };
 
-      display.style.color = 'var(--danger-color)';
-      display.textContent = JSON.stringify(errorData, null, 2);
-      trackError('network');
-      showToast('CORS Error: Blocked by policy', 'error');
+        display.style.color = 'var(--danger-color)';
+        display.textContent = JSON.stringify(errorData, null, 2);
+        trackError('network');
+        showToast('CORS Error: Blocked by policy', 'error');
+      }
     }
 
     // API functions specific to this page

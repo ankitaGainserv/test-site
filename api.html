@@ -88,6 +88,15 @@
         <button class="btn btn-danger btn-sm" onclick="triggerTimeoutError()">Timeout Error</button>
         <button class="btn btn-danger btn-sm" onclick="triggerCORSError()">CORS Error</button>
       </div>
+      <p class="text-sm text-muted" style="margin: var(--spacing-md) 0 var(--spacing-sm);">Test JavaScript & Resource errors</p>
+      <div class="flex gap-05" style="flex-wrap: wrap;">
+        <button class="btn btn-danger btn-sm" onclick="triggerJSError()">JS ReferenceError</button>
+        <button class="btn btn-danger btn-sm" onclick="triggerJSTypeError()">JS TypeError</button>
+        <button class="btn btn-danger btn-sm" onclick="triggerJSSyntaxError()">JS SyntaxError</button>
+        <button class="btn btn-danger btn-sm" onclick="triggerUnhandledRejection()">Unhandled Promise</button>
+        <button class="btn btn-danger btn-sm" onclick="triggerImageError()">Image Load Error</button>
+        <button class="btn btn-danger btn-sm" onclick="triggerScriptError()">Script Load Error</button>
+      </div>
       <div id="apiResponseDisplay" class="code-block mt-05" style="max-height: 150px; overflow-y: auto; display: none;"></div>
     </div>
 
@@ -460,6 +469,169 @@
         trackError('network');
         showToast('CORS Error: Blocked by policy', 'error');
       }
+    }
+
+    // Trigger JS ReferenceError
+    function triggerJSError() {
+      const display = document.getElementById('apiResponseDisplay');
+      display.style.display = 'block';
+      display.style.color = 'var(--danger-color)';
+
+      // Make an API call first to log the action
+      fetch('https://jsonplaceholder.typicode.com/posts/1')
+        .then(() => {
+          // Now trigger the actual ReferenceError
+          try {
+            undefinedVariable.someMethod(); // This will throw ReferenceError
+          } catch(e) {
+            const errorData = {
+              type: 'ReferenceError',
+              message: e.message,
+              stack: e.stack ? e.stack.split('\n').slice(0, 3).join('\n') : 'N/A',
+              timestamp: new Date().toISOString()
+            };
+            display.textContent = JSON.stringify(errorData, null, 2);
+            trackError('js');
+            showToast('JS ReferenceError triggered', 'error');
+            // Re-throw to trigger global error handler
+            throw e;
+          }
+        });
+    }
+
+    // Trigger JS TypeError
+    function triggerJSTypeError() {
+      const display = document.getElementById('apiResponseDisplay');
+      display.style.display = 'block';
+      display.style.color = 'var(--danger-color)';
+
+      fetch('https://jsonplaceholder.typicode.com/posts/1')
+        .then(() => {
+          try {
+            const obj = null;
+            obj.someMethod(); // This will throw TypeError
+          } catch(e) {
+            const errorData = {
+              type: 'TypeError',
+              message: e.message,
+              stack: e.stack ? e.stack.split('\n').slice(0, 3).join('\n') : 'N/A',
+              timestamp: new Date().toISOString()
+            };
+            display.textContent = JSON.stringify(errorData, null, 2);
+            trackError('js');
+            showToast('JS TypeError triggered', 'error');
+            throw e;
+          }
+        });
+    }
+
+    // Trigger JS SyntaxError (via eval)
+    function triggerJSSyntaxError() {
+      const display = document.getElementById('apiResponseDisplay');
+      display.style.display = 'block';
+      display.style.color = 'var(--danger-color)';
+
+      fetch('https://jsonplaceholder.typicode.com/posts/1')
+        .then(() => {
+          try {
+            eval('function { invalid syntax }'); // This will throw SyntaxError
+          } catch(e) {
+            const errorData = {
+              type: 'SyntaxError',
+              message: e.message,
+              stack: e.stack ? e.stack.split('\n').slice(0, 3).join('\n') : 'N/A',
+              timestamp: new Date().toISOString()
+            };
+            display.textContent = JSON.stringify(errorData, null, 2);
+            trackError('js');
+            showToast('JS SyntaxError triggered', 'error');
+            throw e;
+          }
+        });
+    }
+
+    // Trigger Unhandled Promise Rejection
+    function triggerUnhandledRejection() {
+      const display = document.getElementById('apiResponseDisplay');
+      display.style.display = 'block';
+      display.style.color = 'var(--danger-color)';
+
+      // Make an API call first
+      fetch('https://jsonplaceholder.typicode.com/posts/1')
+        .then(() => {
+          // Create an unhandled promise rejection
+          const errorData = {
+            type: 'UnhandledPromiseRejection',
+            message: 'Promise rejected without catch handler',
+            reason: 'Simulated async operation failure',
+            timestamp: new Date().toISOString()
+          };
+          display.textContent = JSON.stringify(errorData, null, 2);
+          trackError('js');
+          showToast('Unhandled Promise Rejection triggered', 'error');
+
+          // Create actual unhandled rejection
+          Promise.reject(new Error('Unhandled Promise Rejection: Async operation failed'));
+        });
+    }
+
+    // Trigger Image Load Error
+    function triggerImageError() {
+      const display = document.getElementById('apiResponseDisplay');
+      display.style.display = 'block';
+      display.style.color = 'var(--danger-color)';
+
+      // Make an API call first
+      fetch('https://jsonplaceholder.typicode.com/posts/1')
+        .then(() => {
+          // Create a broken image to trigger resource loading error
+          const img = new Image();
+          img.onerror = function() {
+            const errorData = {
+              type: 'ResourceLoadError',
+              resourceType: 'Image',
+              src: this.src,
+              message: 'Failed to load image resource',
+              timestamp: new Date().toISOString()
+            };
+            display.textContent = JSON.stringify(errorData, null, 2);
+            trackError('resource');
+            showToast('Image Load Error triggered', 'error');
+          };
+          // Use a non-existent image URL
+          img.src = 'https://example.com/non-existent-image-' + Date.now() + '.png';
+        });
+    }
+
+    // Trigger Script Load Error
+    function triggerScriptError() {
+      const display = document.getElementById('apiResponseDisplay');
+      display.style.display = 'block';
+      display.style.color = 'var(--danger-color)';
+
+      // Make an API call first
+      fetch('https://jsonplaceholder.typicode.com/posts/1')
+        .then(() => {
+          // Create a broken script to trigger resource loading error
+          const script = document.createElement('script');
+          script.onerror = function() {
+            const errorData = {
+              type: 'ResourceLoadError',
+              resourceType: 'Script',
+              src: this.src,
+              message: 'Failed to load script resource',
+              timestamp: new Date().toISOString()
+            };
+            display.textContent = JSON.stringify(errorData, null, 2);
+            trackError('resource');
+            showToast('Script Load Error triggered', 'error');
+            // Remove the failed script element
+            this.remove();
+          };
+          // Use a non-existent script URL
+          script.src = 'https://example.com/non-existent-script-' + Date.now() + '.js';
+          document.head.appendChild(script);
+        });
     }
 
     // API functions specific to this page

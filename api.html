@@ -337,56 +337,60 @@
       }
     }
 
-    // Status code error definitions
-    const statusErrors = {
-      401: { error: 'Unauthorized', message: 'Authentication required. Please log in.' },
-      403: { error: 'Forbidden', message: 'You do not have permission to access this resource.' },
-      404: { error: 'Not Found', message: 'The requested resource could not be found.' },
-      500: { error: 'Internal Server Error', message: 'The server encountered an unexpected condition.' },
-      502: { error: 'Bad Gateway', message: 'Invalid response from upstream server.' },
-      503: { error: 'Service Unavailable', message: 'The server is temporarily unavailable.' }
-    };
-
-    // Trigger specific status code error with real API call
+    // Trigger specific status code error using httpbin.org
+    // httpbin.org/status/:code returns the exact HTTP status code requested
     async function triggerStatusError(statusCode) {
       const display = document.getElementById('apiResponseDisplay');
       display.style.display = 'block';
       display.textContent = 'Loading...';
       display.style.color = '';
 
-      const url = `https://httpstat.us/${statusCode}`;
+      // httpbin.org reliably returns the exact status code you request
+      const url = `https://httpbin.org/status/${statusCode}`;
 
       try {
-        const res = await fetch(url, {
-          headers: { 'Accept': 'application/json' }
-        });
+        const res = await fetch(url);
 
-        const errorInfo = statusErrors[statusCode] || { error: 'Unknown Error', message: 'An error occurred' };
+        // Try to parse response body (httpbin may return empty or text)
+        let responseBody = null;
+        const contentType = res.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            responseBody = await res.json();
+          } catch (e) {
+            responseBody = null;
+          }
+        } else {
+          const text = await res.text();
+          responseBody = text || null;
+        }
+
+        // Build complete error response showing real API data
         const errorData = {
           status: res.status,
           statusText: res.statusText,
-          error: errorInfo.error,
-          message: errorInfo.message,
           url: url,
+          method: 'GET',
+          response: responseBody,
           timestamp: new Date().toISOString()
         };
 
         display.style.color = 'var(--danger-color)';
         display.textContent = JSON.stringify(errorData, null, 2);
-        trackError(null, statusCode);
-        showToast(`API Error: ${statusCode} ${errorInfo.error}`, 'error');
+        trackError(null, res.status);
+        showToast(`API Error: ${res.status} ${res.statusText}`, 'error');
       } catch(e) {
         const errorData = {
-          status: statusCode,
-          error: 'Request Failed',
+          status: 'Network Error',
+          error: e.name,
           message: e.message,
           url: url,
           timestamp: new Date().toISOString()
         };
         display.style.color = 'var(--danger-color)';
         display.textContent = JSON.stringify(errorData, null, 2);
-        trackError(null, statusCode);
-        showToast(`API Error: ${statusCode}`, 'error');
+        trackError('network');
+        showToast(`Request Failed: ${e.message}`, 'error');
       }
     }
 
